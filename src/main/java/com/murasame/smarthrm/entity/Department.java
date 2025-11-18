@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Document(collection = "Department")
@@ -21,12 +22,12 @@ public class Department {
 	private Integer managerId;   // 部门负责人ID
 
 	@Field("empList")
-	private List<EmpRef> empList;
+	private List<Map<String, Integer>> empList;
 
-	/* ===== 嵌套对象：仅存 empId ===== */
-	@Data
-	public static class EmpRef {
-		@Field("empId")
-		private Integer empId;
-	}
+//	/* ===== 嵌套对象：仅存 empId ===== */
+//	@Data
+//	public static class Member {
+//		@Field("empId")
+//		private Integer empId;
+//	}
 }
