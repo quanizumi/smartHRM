@@ -57,12 +57,4 @@ public class SkillMatchController {
 	@GetMapping("/departments")
 	@ResponseBody
 	public List<Department> allDeps(){ return depRepo.findAll(); }
-
-	@GetMapping("/show")
-	public String showSkills(){
-		List<Skill> list = skillRepo.findAll();
-		System.out.println(">>> skills size = " + list.size());
-		System.out.println(list);
-		return "employees";
-	}
 }

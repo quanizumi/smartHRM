@@ -6,6 +6,7 @@ SmartHRM is a human resource management system based on Spring Boot, designed to
 
 - **Employee Management**: Supports CRUD operations for employees.
 - **Skill Matching**: Intelligent matching of suitable employees based on project skill requirements.
+- **Project Matching**: Fuzzy Search project by name or involved employee's id.
 - **Department and Project Management**: Manage organizational structure and project information.
 - **Training Management**: Manage employee training records.
 
@@ -24,7 +25,6 @@ SmartHRM is a human resource management system based on Spring Boot, designed to
 - **SkillMatchController**: Provides skill matching functionality, allowing search for suitable employees based on required project skills.
 - **ProjectController**: Manages project information.
 - **SkillController**: Manages skill information.
-- **DepartmentRepo**: Manages department information.
 - **TrainingController**: Manages training information.
 
 ### Data Access Layer
@@ -68,10 +68,12 @@ Visit `http://localhost:8080` to view the system homepage.
 
 ## Usage Instructions
 
-- **Employee Management**: Access the `/employees` route to add, modify, or delete employee records.
-- **Skill Matching**: Access the `/skillmatch` route, select required skills, and the system will automatically match eligible employees.
-- **Project Management**: Access the `/projects` route to manage project information.
-- **Skill Management**: Access the `/skills` route to manage skill information.
+- **Employee Management**: Access the `/employees/` route to add, modify, or delete employee records.
+- **Skill Matching**: Access the `/skillmatch/` route, select required skills, and the system will automatically match eligible employees.
+- **Project Management**: Access the `/projects/` route to manage project information.
+- **Skill Management**: Access the `/skills/` route to manage skill information.
+- **Project Matching**: Access the `/projectmatch/` route to fuzzy search project by name or involved employee's id.
+- **Application.yml**: Modify the url of offline or online database. See details in the active .yml file.
 
 ## Contribution Guidelines
 
