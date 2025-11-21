@@ -85,7 +85,7 @@ mvn spring-boot:run
 
 1. Fork 本仓库。
 2. 创建新分支 (`git checkout -b feature/new-feature`)。
-3. 从远程仓库获取最新更新后将新增文件加入git版本控制。
+3. 从远程仓库-主分支获取最新更新后将新增文件加入git版本控制。
 4. 提交更改与更改描述 (`git commit -m 'Add new feature'`)。
 5. 推送至远程分支 (`git push origin feature/new-feature`)。
 6. 提交 Pull Request。
