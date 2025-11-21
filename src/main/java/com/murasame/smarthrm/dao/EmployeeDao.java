@@ -35,9 +35,6 @@ public class EmployeeDao {
 		Query query = new Query(new Criteria().andOperator(elemMatchCriterias.toArray(new Criteria[0])));
 		return mongoTemplate.find(query, Employee.class);
 	}
-	//修复报错
-	public boolean existsById(Integer id) {
-		Query query = new Query(Criteria.where("_id").is(id));
-		return mongoTemplate.exists(query, Employee.class);
-	}
+
+
 }
