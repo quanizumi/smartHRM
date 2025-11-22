@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技能与培训管理系统</title>
+    <style>
+        :root { --primary: #1677ff; --bg: #f5f7fa; --card-bg: #ffffff; --text: #333; --danger: #ff4d4f; --border: #ebeef5; --warning: #e6a23c; }
+        body { font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: var(--text); }
+
+        .pagination { margin-top: 10px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+        .btn-sm { padding: 4px 8px; background: #e6f7ff; color: #1890ff; border: 1px solid #91caff; cursor: pointer;}
+        .btn-sm:hover { background: #4096ff; color: white; }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { margin: 0; color: #303133; font-weight: 600; }
+        .header p { color: #909399; font-size: 14px; margin-top: 10px; }
+
+        .main-container { display: flex; gap: 25px; max-width: 1400px; margin: 0 auto; align-items: flex-start; flex-wrap: wrap; }
+        .card { flex: 1; min-width: 400px; background: var(--card-bg); padding: 25px; border-radius: 10px; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05); border: 1px solid var(--border); }
+
+        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
+        .card-header h2 { margin: 0; font-size: 18px; color: #303133; border-left: 4px solid var(--primary); padding-left: 10px; }
+
+        /* 搜索栏样式 */
+        .search-box { background: #f0f9eb; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; border: 1px solid #e1f3d8; }
+        .search-box input { flex: 1; }
+
+        /* 表单区域样式 */
+        .form-box { background: #f9fafc; padding: 20px; border-radius: 6px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #606266; }
+        .form-control { width: 100%; padding: 9px 12px; border: 1px solid #dcdfe6; border-radius: 4px; box-sizing: border-box; transition: 0.3s; font-size: 14px; }
+        .form-control:focus { border-color: var(--primary); outline: none; }
+        .form-control:disabled { background-color: #eef1f6; cursor: not-allowed; color: #bbb; }
+        .help-text { font-size: 12px; color: #909399; margin-top: 5px; }
+
+        /* 编辑模式提示条 */
+        .edit-mode-bar { display: none; background: #fff7e6; border: 1px solid #ffd591; color: #d48806; padding: 5px 10px; font-size: 12px; margin-bottom: 10px; border-radius: 4px; }
+
+        /* 按钮样式 */
+        .btn { cursor: pointer; padding: 9px 18px; border: none; border-radius: 4px; font-size: 14px; transition: 0.3s; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-primary { background-color: var(--primary); color: white; width: 100%; }
+        .btn-primary:hover { background-color: #4096ff; }
+        .btn-warning { background-color: var(--warning); color: white; width: 48%; }
+        .btn-warning:hover { background-color: #ebb563; }
+        .btn-cancel { background-color: #909399; color: white; width: 48%; }
+        .btn-cancel:hover { background-color: #a6a9ad; }
+
+        .btn-search { background-color: #67c23a; color: white; padding: 9px 15px; }
+        .btn-search:hover { background-color: #85ce61; }
+        .btn-reset { background-color: #909399; color: white; padding: 9px 15px; }
+
+        .btn-action-group { display: flex; gap: 5px; justify-content: center; }
+        .btn-danger { background-color: #fff; color: var(--danger); border: 1px solid #fde2e2; padding: 4px 12px; font-size: 12px; border-radius: 3px; }
+        .btn-danger:hover { background-color: #fef0f0; }
+        .btn-edit { background-color: #fff; color: var(--primary); border: 1px solid #d9ecff; padding: 4px 12px; font-size: 12px; border-radius: 3px; }
+        .btn-edit:hover { background-color: #ecf5ff; }
+
+        .btn-refresh { background: none; color: var(--primary); font-size: 14px; padding: 0; }
+        .btn-refresh:hover { text-decoration: underline; }
+
+        /* 按钮组容器 */
+        .btn-container { display: flex; justify-content: space-between; gap: 10px; }
+
+        /* 表格样式 */
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f5f7fa; text-align: left; padding: 12px; color: #909399; font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; color: #606266; }
+        tr:hover { background-color: #f5f7fa; }
+
+        .tag { padding: 2px 6px; border-radius: 4px; font-size: 12px; border: 1px solid; }
+        .tag-skill { background: #f0f9eb; border-color: #e1f3d8; color: #67c23a; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>技能与培训管理系统</h1>
+    <p>Skills and Training Management System</p>
+</div>
+
+<div class="main-container">
+
+    <div class="card">
+        <div class="card-header">
+            <h2>技能库管理</h2>
+            <button class="btn btn-refresh" onclick="loadSkills()">↻ 刷新列表</button>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchSkillName" class="form-control" placeholder="输入技能名称搜索">
+            <button class="btn btn-search" onclick="searchSkill()">搜索</button>
+        </div>
+
+        <div class="form-box">
+            <div id="skillEditModeBar" class="edit-mode-bar">正在编辑模式 - ID: <span id="editSkillIdDisplay"></span></div>
+
+            <div class="form-group">
+                <label>技能 ID (新增可选 / 修改锁定)</label>
+                <input type="number" id="skillIdInput" class="form-control" placeholder="留空则自动生成">
+            </div>
+
+            <div class="form-group">
+                <label>技能名称 <span style="color:red">*</span></label>
+                <input type="text" id="skillName" class="form-control" placeholder="例如：Java, 沟通技巧">
+            </div>
+            <div class="form-group">
+                <label>技能分类</label>
+                <input type="text" id="skillKind" class="form-control" placeholder="例如：后端开发">
+            </div>
+
+            <div id="skillBtnGroup" class="btn-container">
+                <button class="btn btn-primary" onclick="addSkill()">+ 新增技能</button>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th style="width: 50px">ID</th>
+                <th>技能名称</th>
+                <th>分类</th>
+                <th style="width: 100px; text-align: center;">操作</th>
+            </tr>
+            </thead>
+            <tbody id="skillTableBody">
+            </tbody>
+        </table>
+        <div class="pagination">
+            <button class="btn btn-sm" onclick="changeSkillPage(-1)">上一页</button>
+            <span id="skillPageInfo">第 1 页</span>
+            <button class="btn btn-sm" onclick="changeSkillPage(1)">下一页</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>培训课程管理</h2>
+            <button class="btn btn-refresh" onclick="loadTrainings()">↻ 刷新列表</button>
+        </div>
+
+        <div class="search-box" style="background: #fdf6ec; border-color: #faecd8;">
+            <input type="text" id="searchTrainName" class="form-control" placeholder="输入课程名称搜索">
+            <button class="btn btn-search" style="background: #e6a23c;" onclick="searchTraining()">搜索</button>
+        </div>
+
+        <div class="form-box">
+            <div id="trainEditModeBar" class="edit-mode-bar">正在编辑课程 - ID: <span id="editTrainIdDisplay"></span></div>
+
+            <div class="form-group">
+                <label>课程 ID (新增可选 / 修改锁定)</label>
+                <input type="number" id="trainIdInput" class="form-control" placeholder="留空则自动生成">
+            </div>
+
+            <div class="form-group">
+                <label>课程名称 <span style="color:red">*</span></label>
+                <input type="text" id="trainName" class="form-control" placeholder="例如：Spring Boot 极速入门">
+            </div>
+            <div class="form-group">
+                <label>关联技能 ID <span style="color:red">*</span></label>
+                <input type="number" id="targetSkillId" class="form-control" placeholder="该课程提升哪项技能？">
+            </div>
+            <div class="form-group">
+                <label>参与员工 ID (逗号分隔)</label>
+                <input type="text" id="memberIds" class="form-control" placeholder="1001, 1002">
+                <div class="help-text">系统将自动校验员工 ID 是否存在</div>
+            </div>
+
+            <div id="trainingBtnGroup" class="btn-container">
+                <button class="btn btn-primary" onclick="addTraining()">+ 发布课程</button>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th style="width: 50px">ID</th>
+                <th>课程名称</th>
+                <th>关联技能</th>
+                <th>人数</th>
+                <th style="width: 100px; text-align: center;">操作</th>
+            </tr>
+            </thead>
+            <tbody id="trainingTableBody">
+            </tbody>
+        </table>
+        <div class="pagination">
+            <button class="btn btn-sm" onclick="changeTrainingPage(-1)">上一页</button>
+            <span id="trainingPageInfo">第 1 页</span>
+            <button class="btn btn-sm" onclick="changeTrainingPage(1)">下一页</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = "http://localhost:8080";
+
+    let skillState = { page: 0, size: 10, totalPages: 0 };
+    let trainingState = { page: 0, size: 10, totalPages: 0 };
+
+    async function handleRequest(url, method, body = null) {
+        try {
+            const options = {
+                method: method,
+                headers: { "Content-Type": "application/json" }
+            };
+            if (body) options.body = JSON.stringify(body);
+            const response = await fetch(url, options);
+            const text = await response.text();
+            if (!response.ok) { alert(text); return false; }
+            return true;
+        } catch (error) {
+            console.error(error); return false;
+        }
+    }
+
+    // 技能管理
+
+    async function loadSkills(page = 0) {
+        if (page < 0) page = 0;
+        if (skillState.totalPages > 0 && page >= skillState.totalPages) page = skillState.totalPages - 1;
+
+        const res = await fetch(`${API_BASE}/skill/list?page=${page}&size=${skillState.size}`);
+        const data = await res.json();
+
+        let list = [];
+        if (data.content) {
+            list = data.content;
+            skillState.page = data.number;
+            skillState.totalPages = data.totalPages;
+            document.getElementById("skillPageInfo").innerText = `第 ${data.number + 1} / ${data.totalPages || 1} 页`;
+        } else {
+            list = data; // 兼容 List 返回
+        }
+
+        const tbody = document.getElementById("skillTableBody");
+        tbody.innerHTML = "";
+
+        if(!list || list.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center;color:#999'>暂无数据</td></tr>";
+            return;
+        }
+
+        list.forEach(item => {
+            const safeName = item.skillName.replace(/"/g, '&quot;');
+            const safeKind = (item.skillKind || '').replace(/"/g, '&quot;');
+
+            tbody.innerHTML += `
+                <tr>
+                    <td><b>${item._id}</b></td>
+                    <td>${item.skillName}</td>
+                    <td><span class="tag tag-skill">${item.skillKind || '通用'}</span></td>
+                    <td class="btn-action-group">
+                        <button class="btn btn-edit" onclick="editSkill(${item._id}, '${safeName}', '${safeKind}')">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteSkill(${item._id})">删除</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function changeSkillPage(delta) { loadSkills(skillState.page + delta); }
+
+    // 搜索功能
+    async function searchSkill() {
+        const name = document.getElementById("searchSkillName").value;
+        if(!name) { loadSkills(0); return; }
+        const res = await fetch(`${API_BASE}/skill/search?name=${name}`);
+        const list = await res.json();
+        // 渲染搜索结果（不分页）
+        const tbody = document.getElementById("skillTableBody");
+        tbody.innerHTML = "";
+        if(!list || list.length === 0) tbody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>无搜索结果</td></tr>";
+        list.forEach(item => {
+            const safeName = item.skillName.replace(/"/g, '&quot;');
+            const safeKind = (item.skillKind || '').replace(/"/g, '&quot;');
+            tbody.innerHTML += `<tr><td><b>${item._id}</b></td><td>${item.skillName}</td><td><span class="tag tag-skill">${item.skillKind || '通用'}</span></td><td class="btn-action-group"><button class="btn btn-edit" onclick="editSkill(${item._id}, '${safeName}', '${safeKind}')">编辑</button><button class="btn btn-danger" onclick="deleteSkill(${item._id})">删除</button></td></tr>`;
+        });
+        document.getElementById("skillPageInfo").innerText = "搜索结果";
+    }
+
+    async function addSkill() {
+        const idInput = document.getElementById("skillIdInput").value;
+        const name = document.getElementById("skillName").value;
+        const kind = document.getElementById("skillKind").value;
+
+        if (!name) return alert("请输入技能名称");
+        const payload = { skillName: name, skillKind: kind };
+        if(idInput) payload._id = parseInt(idInput);
+
+        const success = await handleRequest(`${API_BASE}/skill/add`, "POST", payload);
+        if (success) { resetSkillForm(); loadSkills(0); }
+    }
+
+    async function updateSkill() {
+        const id = document.getElementById("skillIdInput").value;
+        const name = document.getElementById("skillName").value;
+        const kind = document.getElementById("skillKind").value;
+
+        if (!id) return alert("无法获取ID");
+        if (!name) return alert("请输入技能名称");
+
+        const success = await handleRequest(`${API_BASE}/skill/update`, "POST", {
+            _id: parseInt(id),
+            skillName: name,
+            skillKind: kind
+        });
+
+        if (success) { alert("技能修改成功"); resetSkillForm(); loadSkills(skillState.page); }
+    }
+
+    function editSkill(id, name, kind) {
+        document.getElementById("skillIdInput").value = id;
+        document.getElementById("skillName").value = name;
+        document.getElementById("skillKind").value = kind;
+
+        document.getElementById("skillIdInput").disabled = true;
+        document.getElementById("skillEditModeBar").style.display = "block";
+        document.getElementById("editSkillIdDisplay").innerText = id;
+
+        document.getElementById("skillBtnGroup").innerHTML = `
+            <button class="btn btn-warning" onclick="updateSkill()">保存修改</button>
+            <button class="btn btn-cancel" onclick="resetSkillForm()">取消编辑</button>
+        `;
+    }
+
+    function resetSkillForm() {
+        document.getElementById("skillIdInput").value = "";
+        document.getElementById("skillIdInput").disabled = false;
+        document.getElementById("skillName").value = "";
+        document.getElementById("skillKind").value = "";
+        document.getElementById("skillEditModeBar").style.display = "none";
+        document.getElementById("skillBtnGroup").innerHTML = `<button class="btn btn-primary" onclick="addSkill()">+ 新增技能</button>`;
+    }
+
+    async function deleteSkill(id) {
+        if(!confirm(`确定要删除技能 ID:${id} 吗？`)) return;
+        const success = await handleRequest(`${API_BASE}/skill/delete/${id}`, "DELETE");
+        if (success) loadSkills(skillState.page);
+    }
+
+
+    // 培训管理
+
+    async function loadTrainings(page = 0) {
+        if (page < 0) page = 0;
+        if (trainingState.totalPages > 0 && page >= trainingState.totalPages) page = trainingState.totalPages - 1;
+
+        const res = await fetch(`${API_BASE}/training/list?page=${page}&size=${trainingState.size}`);
+        const data = await res.json();
+
+        let list = [];
+        if (data.content) {
+            list = data.content;
+            trainingState.page = data.number;
+            trainingState.totalPages = data.totalPages;
+            document.getElementById("trainingPageInfo").innerText = `第 ${data.number + 1} / ${data.totalPages || 1} 页`;
+        } else {
+            list = data;
+        }
+
+        const tbody = document.getElementById("trainingTableBody");
+        tbody.innerHTML = "";
+
+        if(!list || list.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;color:#999'>暂无课程</td></tr>";
+            return;
+        }
+
+        list.forEach(item => {
+            const count = item.members ? item.members.length : 0;
+            const memberStr = (item.members || []).join(",");
+            const safeName = item.trainName.replace(/"/g, '&quot;');
+
+            tbody.innerHTML += `
+                <tr>
+                    <td><b>${item._id}</b></td>
+                    <td>${item.trainName}</td>
+                    <td><span class="tag">${item.skillId}</span></td>
+                    <td>${count} 人</td>
+                    <td class="btn-action-group">
+                        <button class="btn btn-edit" onclick="editTraining(${item._id}, '${safeName}', ${item.skillId}, '${memberStr}')">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteTraining(${item._id})">删除</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function changeTrainingPage(delta) { loadTrainings(trainingState.page + delta); }
+
+    async function searchTraining() {
+        const name = document.getElementById("searchTrainName").value;
+        if(!name) { loadTrainings(0); return; }
+        const res = await fetch(`${API_BASE}/training/search?name=${name}`);
+        const list = await res.json();
+        const tbody = document.getElementById("trainingTableBody");
+        tbody.innerHTML = "";
+        if(!list || list.length === 0) tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>无搜索结果</td></tr>";
+        list.forEach(item => {
+            const count = item.members ? item.members.length : 0;
+            const memberStr = (item.members || []).join(",");
+            const safeName = item.trainName.replace(/"/g, '&quot;');
+            tbody.innerHTML += `<tr><td><b>${item._id}</b></td><td>${item.trainName}</td><td><span class="tag">${item.skillId}</span></td><td>${count} 人</td><td class="btn-action-group"><button class="btn btn-edit" onclick="editTraining(${item._id}, '${safeName}', ${item.skillId}, '${memberStr}')">编辑</button><button class="btn btn-danger" onclick="deleteTraining(${item._id})">删除</button></td></tr>`;
+        });
+        document.getElementById("trainingPageInfo").innerText = "搜索结果";
+    }
+
+    async function addTraining() {
+        const idInput = document.getElementById("trainIdInput").value;
+        const name = document.getElementById("trainName").value;
+        const skillId = document.getElementById("targetSkillId").value;
+        const memberStr = document.getElementById("memberIds").value;
+
+        if (!name) return alert("请输入课程名称");
+        if (!skillId) return alert("请输入关联的技能ID");
+
+        const members = parseMembers(memberStr);
+
+        const payload = { trainName: name, skillId: parseInt(skillId), members: members };
+        if(idInput) payload._id = parseInt(idInput);
+
+        const success = await handleRequest(`${API_BASE}/training/add`, "POST", payload);
+
+        if (success) { resetTrainingForm(); loadTrainings(0); }
+    }
+
+    async function updateTraining() {
+        // 修改时从被锁定的输入框获取ID
+        const id = document.getElementById("trainIdInput").value;
+        const name = document.getElementById("trainName").value;
+        const skillId = document.getElementById("targetSkillId").value;
+        const memberStr = document.getElementById("memberIds").value;
+
+        if (!id) return alert("ID丢失，请重新操作");
+        if (!name) return alert("请输入课程名称");
+
+        const members = parseMembers(memberStr);
+
+        const success = await handleRequest(`${API_BASE}/training/update`, "POST", {
+            _id: parseInt(id),
+            trainName: name,
+            skillId: parseInt(skillId),
+            members: members
+        });
+
+        if (success) { alert("课程修改成功"); resetTrainingForm(); loadTrainings(trainingState.page); }
+    }
+
+    function editTraining(id, name, skillId, memberStr) {
+        // 填充数据
+        document.getElementById("trainIdInput").value = id;
+        document.getElementById("trainName").value = name;
+        document.getElementById("targetSkillId").value = skillId;
+        document.getElementById("memberIds").value = memberStr;
+
+        // 锁定ID输入框
+        document.getElementById("trainIdInput").disabled = true;
+        document.getElementById("trainEditModeBar").style.display = "block";
+        document.getElementById("editTrainIdDisplay").innerText = id;
+
+        document.getElementById("trainingBtnGroup").innerHTML = `
+            <button class="btn btn-warning" onclick="updateTraining()">保存修改</button>
+            <button class="btn btn-cancel" onclick="resetTrainingForm()">取消编辑</button>
+        `;
+    }
+
+    function resetTrainingForm() {
+        document.getElementById("trainIdInput").value = "";
+        document.getElementById("trainIdInput").disabled = false;
+        document.getElementById("trainName").value = "";
+        document.getElementById("targetSkillId").value = "";
+        document.getElementById("memberIds").value = "";
+
+        document.getElementById("trainEditModeBar").style.display = "none";
+
+        document.getElementById("trainingBtnGroup").innerHTML = `<button class="btn btn-primary" onclick="addTraining()">+ 发布课程</button>`;
+    }
+
+    function parseMembers(str) {
+        let members = [];
+        if (str && str.trim()) {
+            members = str.split(/[,，]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        }
+        return members;
+    }
+
+    async function deleteTraining(id) {
+        if(!confirm(`确定要删除课程 ID:${id} 吗？`)) return;
+        const success = await handleRequest(`${API_BASE}/training/delete/${id}`, "DELETE");
+        if (success) loadTrainings(trainingState.page);
+    }
+
+    window.onload = function() {
+        loadSkills(0);
+        loadTrainings(0);
+    };
+</script>
+</body>
+</html>
