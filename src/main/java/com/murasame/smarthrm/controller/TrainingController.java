@@ -9,11 +9,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
+@Controller
 @RequestMapping("/training")
 @RequiredArgsConstructor
 public class TrainingController {
@@ -22,6 +23,12 @@ public class TrainingController {
     private final SkillRepo skillRepo;
     private final EmployeeDao employeeDao;
 
+    @GetMapping("/")
+    public String manageSkillTraining(){
+        return "manageSkillTraining";
+    }
+
+    @ResponseBody
     @PostMapping("/add")
     public ResponseEntity<String> addTraining(@RequestBody Training training) {
         if (training.getTrainName() == null || training.getTrainName().trim().isEmpty()) {
@@ -49,6 +56,7 @@ public class TrainingController {
     }
 
     //  新增：修改接口
+    @ResponseBody
     @PostMapping("/update")
     public ResponseEntity<String> updateTraining(@RequestBody Training training) {
         if (training.get_id() == null || !trainingRepo.existsById(training.get_id())) {
@@ -82,6 +90,7 @@ public class TrainingController {
         return null;
     }
 
+    @ResponseBody
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteTraining(@PathVariable Integer id) {
         if (trainingRepo.existsById(id)) {
@@ -91,17 +100,20 @@ public class TrainingController {
         return ResponseEntity.badRequest().body("错误：未找到该课程ID");
     }
 
+    @ResponseBody
     @GetMapping("/list")
     public Page<Training> listTrainings(@RequestParam(defaultValue = "0") int page,
                                         @RequestParam(defaultValue = "10") int size) {
         return trainingRepo.findAll(PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "_id")));
     }
 
+    @ResponseBody
     @GetMapping("/search")
     public List<Training> searchTrainings(@RequestParam String name) {
         return trainingRepo.findByTrainNameContaining(name);
     }
 
+    @ResponseBody
     @GetMapping("/bySkill/{skillId}")
     public List<Training> getTrainingBySkill(@PathVariable Integer skillId) {
         return trainingRepo.findBySkillId(skillId);

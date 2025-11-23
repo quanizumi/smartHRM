@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技能与培训管理</title>
+    <link rel="stylesheet" href="/css/manageSkillTraining.css">
+</head>
+<body>
+
+<div class="header">
+    <h1>技能与培训管理</h1>
+    <p>Skills and Training Management</p>
+</div>
+
+<div class="main-container">
+
+    <div class="card">
+        <div class="card-header">
+            <h2>技能库管理</h2>
+            <button class="btn btn-refresh" onclick="loadSkills()">↻ 刷新列表</button>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchSkillName" class="form-control" placeholder="输入技能名称搜索（注意精确名称、大小写）">
+            <button class="btn btn-search" onclick="searchSkill()">搜索</button>
+        </div>
+
+        <div class="form-box">
+            <div id="skillEditModeBar" class="edit-mode-bar">正在编辑模式 - ID: <span id="editSkillIdDisplay"></span></div>
+
+            <div class="form-group">
+                <label>技能 ID (新增可选 / 修改锁定)</label>
+                <input type="number" id="skillIdInput" class="form-control" placeholder="留空则自动生成">
+            </div>
+
+            <div class="form-group">
+                <label>技能名称 <span style="color:red">*</span></label>
+                <input type="text" id="skillName" class="form-control" placeholder="例如：Java, 沟通技巧">
+            </div>
+            <div class="form-group">
+                <label>技能分类</label>
+                <input type="text" id="skillKind" class="form-control" placeholder="例如：后端开发">
+            </div>
+
+            <div id="skillBtnGroup" class="btn-container">
+                <button class="btn btn-primary" onclick="addSkill()">+ 新增技能</button>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th style="width: 50px">ID</th>
+                <th>技能名称</th>
+                <th>分类</th>
+                <th style="width: 100px; text-align: center;">操作</th>
+            </tr>
+            </thead>
+            <tbody id="skillTableBody">
+            </tbody>
+        </table>
+        <div class="pagination">
+            <button class="btn btn-sm" onclick="changeSkillPage(-1)">上一页</button>
+            <span id="skillPageInfo">第 1 页</span>
+            <button class="btn btn-sm" onclick="changeSkillPage(1)">下一页</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>培训课程管理</h2>
+            <button class="btn btn-refresh" onclick="loadTrainings()">↻ 刷新列表</button>
+        </div>
+
+        <div class="search-box" style="background: #fdf6ec; border-color: #faecd8;">
+            <input type="text" id="searchTrainName" class="form-control" placeholder="输入课程名称搜索（注意精确名称、大小写）">
+            <button class="btn btn-search" style="background: #e6a23c;" onclick="searchTraining()">搜索</button>
+        </div>
+
+        <div class="form-box">
+            <div id="trainEditModeBar" class="edit-mode-bar">正在编辑课程 - ID: <span id="editTrainIdDisplay"></span></div>
+
+            <div class="form-group">
+                <label>课程 ID (新增可选 / 修改锁定)</label>
+                <input type="number" id="trainIdInput" class="form-control" placeholder="留空则自动生成">
+            </div>
+
+            <div class="form-group">
+                <label>课程名称 <span style="color:red">*</span></label>
+                <input type="text" id="trainName" class="form-control" placeholder="例如：Spring Boot 极速入门">
+            </div>
+            <div class="form-group">
+                <label>关联技能 ID <span style="color:red">*</span></label>
+                <input type="number" id="targetSkillId" class="form-control" placeholder="该课程提升哪项技能？">
+            </div>
+            <div class="form-group">
+                <label>参与员工 ID (逗号分隔)</label>
+                <input type="text" id="memberIds" class="form-control" placeholder="1001, 1002">
+                <div class="help-text">系统将自动校验员工 ID 是否存在</div>
+            </div>
+
+            <div id="trainingBtnGroup" class="btn-container">
+                <button class="btn btn-primary" onclick="addTraining()">+ 发布课程</button>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th style="width: 50px">ID</th>
+                <th>课程名称</th>
+                <th>关联技能</th>
+                <th>人数</th>
+                <th style="width: 100px; text-align: center;">操作</th>
+            </tr>
+            </thead>
+            <tbody id="trainingTableBody">
+            </tbody>
+        </table>
+        <div class="pagination">
+            <button class="btn btn-sm" onclick="changeTrainingPage(-1)">上一页</button>
+            <span id="trainingPageInfo">第 1 页</span>
+            <button class="btn btn-sm" onclick="changeTrainingPage(1)">下一页</button>
+        </div>
+    </div>
+</div>
+<script src="/js/manageSkillTraining.js"></script>
+</body>
+</html>
