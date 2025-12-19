@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>部门管理 - 员工管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f9fafb;
+            font-family: "Inter", system-ui, sans-serif;
+            padding: 1.5rem 0;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid #f0f2f5;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap; /* 与员工页面一致：小屏幕自动换行 */
+            gap: 1rem; /* 换行后预留间距 */
+        }
+        .page-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .table th {
+            color: #64748b;
+            font-weight: 500;
+            vertical-align: middle;
+            padding: 0.75rem 1rem;
+        }
+        .table td {
+            vertical-align: middle;
+            padding: 0.75rem 1rem;
+        }
+        .badge-employee {
+            background-color: #f0f9ff;
+            color: #0369a1;
+            margin-right: 0.375rem;
+            margin-bottom: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        .btn {
+            border-radius: 6px;
+            padding: 0.375rem 0.75rem; /* 与员工页面按钮内边距一致 */
+            font-size: 0.875rem;
+        }
+        .btn-edit {
+            background-color: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        .btn-edit:hover {
+            background-color: #d1eaff;
+        }
+        .btn-delete {
+            background-color: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+        .btn-delete:hover {
+            background-color: #ffe8e6;
+        }
+        .btn-add {
+            background-color: #1890ff;
+            color: #fff;
+            border: none;
+        }
+        .btn-add:hover {
+            background-color: #096dd9;
+        }
+        .employee-count {
+            color: #000; /* 员工数量改为黑色 */
+            font-weight: 500;
+        }
+        /* 适配搜索框和按钮的间距，与员工页面一致 */
+        .search-form {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        /* 响应式调整：小屏幕下搜索框宽度自适应 */
+        @media (max-width: 768px) {
+            .input-group {
+                width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <i class="bi bi-people-fill text-primary"></i>
+                <span class="fw-bold">员工管理系统</span>
+            </a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/employees/}">员工列表</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/departments/}">部门管理</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 部门列表卡片：修复结构，card-body 嵌套在 card 内部 -->
+    <div class="card">
+        <!-- 卡片头部：与员工页面布局完全一致 -->
+        <div class="card-header">
+            <div class="page-title">
+                <i class="bi bi-building-fill"></i>
+                <span>部门管理</span>
+            </div>
+
+            <!-- 搜索表单 + 新增按钮 容器：与员工页面结构一致 -->
+            <div class="d-flex gap-2 align-items-center">
+                <!-- 搜索表单：和员工页面样式完全对齐 -->
+                <form th:action="@{/departments/}" method="get" class="d-flex gap-2">
+                    <div class="input-group"> <!-- 宽度与员工页面一致 -->
+                        <!-- 输入框：无 sm 类，与员工页面尺寸一致 -->
+                        <input type="text" name="searchKey"
+                               th:value="${searchKey}"
+                               class="form-control"
+                               placeholder="输入部门名称查询...">
+                        <!-- 查询按钮：无 sm 类，样式与员工页面一致 -->
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="bi bi-search me-1"></i> 查询
+                        </button>
+                        <!-- 清空按钮：无 sm 类，路径解析正确 -->
+                        <button type="button"
+                                th:if="${searchKey != null and searchKey != ''}"
+                                class="btn btn-outline-secondary"
+                                th:onclick="'window.location.href=\'' + @{/departments/} + '\''">
+                            <i class="bi bi-x me-1"></i> 清空
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 新增部门按钮：样式与员工页面一致 -->
+                <a th:href="@{/departments/add}" class="btn btn-add">
+                    <i class="bi bi-plus-circle me-1"></i> 新增部门
+                </a>
+            </div>
+        </div>
+
+        <!-- 卡片内容：修复嵌套错误，放在 card 内部 -->
+        <div class="card-body p-0">
+            <!-- 操作提示 -->
+            <div th:if="${success}" class="alert alert-success m-3" role="alert">[[${success}]]</div>
+            <div th:if="${error}" class="alert alert-danger m-3" role="alert">[[${error}]]</div>
+
+            <!-- 部门表格 -->
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>部门ID</th>
+                    <th>部门名称</th>
+                    <th>负责人</th>
+                    <th>员工数量</th>
+                    <th>部门员工</th>
+                    <th style="width: 120px;">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- 遍历部门列表 -->
+                <tr th:each="dept : ${departments}">
+                    <td th:text="${dept.id}"></td>
+                    <td th:text="${dept.depName}" class="fw-medium"></td>
+                    <td>
+                        <span th:if="${dept.managerName}" class="text-primary" th:text="${dept.managerName}"></span>
+                        <span th:unless="${dept.managerName}" class="text-muted">未设置</span>
+                    </td>
+                    <!-- 员工数量：黑色显示 -->
+                    <td class="employee-count" th:text="${dept.empList != null ? dept.empList.size() : 0}">0</td>
+                    <!-- 部门员工：显示全部成员 -->
+                    <td>
+                        <div th:if="${dept.empList != null and !dept.empList.isEmpty()}" class="d-flex flex-wrap">
+                            <span th:each="emp : ${dept.empList}" class="badge-employee" th:text="${emp.empName}"></span>
+                        </div>
+                        <span th:unless="${dept.empList != null and !dept.empList.isEmpty()}" class="text-muted">无员工</span>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <!-- 编辑按钮：修复跳转路径 -->
+                            <a th:href="@{/departments/mod(id=${dept.id}, pageNum=${pageNum}, searchKey=${searchKey})}" class="btn btn-edit">
+                                <i class="bi bi-pencil me-1"></i> 编辑
+                            </a>
+                            <!-- 删除按钮 -->
+                            <button type="button" class="btn btn-delete delete-btn"
+                                    th:data-deptid="${dept.id}" th:data-deptname="${dept.depName}">
+                                <i class="bi bi-trash me-1"></i> 删除
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <!-- 空状态 -->
+                <tr th:if="${departments.isEmpty()}">
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-folder-open fs-3 mb-2"></i>
+                        <p>暂无部门数据</p>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <!-- 新增：分页控件（放在表格下方） -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <!-- 左侧：显示总条数和总页数 -->
+                <div class="text-muted">
+                    共 <span th:text="${totalElements}"></span> 个部门，共 <span th:text="${totalPages}"></span> 页
+                </div>
+
+                <!-- 右侧：分页按钮和跳转 -->
+                <div class="d-flex align-items-center gap-2">
+                    <!-- 上一页按钮 -->
+                    <a th:href="@{/departments/(searchKey=${searchKey}, pageNum=${pageNum > 1 ? pageNum - 1 : 1})}"
+                       class="btn btn-sm btn-outline-secondary"
+                       th:classappend="${pageNum == 1 ? 'disabled' : ''}">
+                        上一页
+                    </a>
+
+                    <!-- 页码显示（当前页/总页数） -->
+                    <span class="px-2">
+            第 <span th:text="${pageNum}"></span> 页 / 共 <span th:text="${totalPages}"></span> 页
+        </span>
+
+                    <!-- 下一页按钮 -->
+                    <a th:href="@{/departments/(searchKey=${searchKey}, pageNum=${pageNum < totalPages ? pageNum + 1 : totalPages})}"
+                       class="btn btn-sm btn-outline-secondary"
+                       th:classappend="${pageNum == totalPages ? 'disabled' : ''}">
+                        下一页
+                    </a>
+
+                    <!-- 页码跳转输入框 -->
+                    <form th:action="@{/departments/}" method="get" class="d-flex gap-1">
+                        <!-- 隐藏域：传递搜索关键词（保持搜索状态） -->
+                        <input type="hidden" name="searchKey" th:value="${searchKey}">
+                        <!-- 输入页码 -->
+                        <input type="number" name="pageNum"
+                               class="form-control form-control-sm"
+                               style="width: 60px;"
+                               min="1"
+                               th:max="${totalPages}"
+                               th:value="${pageNum}">
+                        <!-- 跳转按钮 -->
+                        <button type="submit" class="btn btn-sm btn-primary">跳转</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除部门 <span id="deleteDeptName" class="text-danger fw-bold"></span> 吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form id="deleteForm" method="post" th:action="@{/departments/delete}">
+                    <input type="hidden" name="id" id="deleteDeptId">
+                    <input type="hidden" name="pageNum" th:value="${pageNum}">
+                    <input type="hidden" name="searchKey" th:value="${searchKey}">
+                    <button type="submit" class="btn btn-danger">确认删除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化删除模态框
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('deleteDeptId').value = this.getAttribute('data-deptid');
+                document.getElementById('deleteDeptName').textContent = this.getAttribute('data-deptname');
+                deleteModal.show();
+            });
+        });
+    });
+</script>
+</body>
+</html>
