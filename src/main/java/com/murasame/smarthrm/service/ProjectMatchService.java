@@ -2,8 +2,10 @@ package com.murasame.smarthrm.service;
 
 import com.murasame.smarthrm.entity.Employee;
 import com.murasame.smarthrm.entity.Project;
+import com.murasame.smarthrm.entity.Task;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 项目匹配服务接口
@@ -58,4 +60,18 @@ public interface ProjectMatchService {
      * @return 项目详情
      */
     Project getProjectById(Integer projectId);
+
+    /**
+     * 获取项目及其任务信息
+     * @param projectId 项目ID
+     * @return 项目及其任务的映射（key: project, value: tasks列表）
+     */
+    Map<String, Object> getProjectWithTasks(Integer projectId);
+
+    /**
+     * 获取项目列表及其任务信息
+     * @param projects 项目列表
+     * @return 包含项目及其任务信息的列表
+     */
+    List<Map<String, Object>> getProjectsWithTasks(List<Project> projects);
 }

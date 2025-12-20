@@ -191,15 +191,19 @@ function doSearch(){
 
     // 逐个执行搜索并合并结果
     const searchPromises = searchConditions.map(condition => {
+        // 使用新的API来获取包含任务信息的项目
+        let url = '/projectmatch/';
+        let options = {
+            method: 'POST',
+            headers: {'Content-Type':'application/x-www-form-urlencoded'}
+        };
+
         const params = new URLSearchParams();
         params.append('searchType', condition.type);
         params.append('searchValue', condition.value);
+        options.body = params.toString();
 
-        return fetch('/projectmatch/', {
-            method: 'POST',
-            headers: {'Content-Type':'application/x-www-form-urlencoded'},
-            body: params.toString()
-        }).then(r => r.json());
+        return fetch(url, options).then(r => r.json());
     });
 
     // 并行执行所有搜索
@@ -219,7 +223,12 @@ function doSearch(){
                 });
             });
 
-            renderTable(allProjects);
+            // 为每个项目获取任务信息
+            return getProjectsWithTasks(allProjects);
+        })
+        .then(projectsWithTasks => {
+            // 显示项目及其任务信息
+            renderTableWithTasks(projectsWithTasks);
         })
         .catch(err => alert('搜索出错：' + err));
 }
@@ -237,56 +246,6 @@ function toggleSort(){
     document.getElementById('sortIcon').textContent = sortAsc ? '↑' : '↓';
     currentPage = 1;   // 重新从第一页显示
     renderPage();
-}
-
-/* ----------  真正渲染当前页  ---------- */
-function renderPage(){
-    // 1. 排序
-    fullList.sort((a,b) => {
-        const idA = a._id || a.id || 0;
-        const idB = b._id || b.id || 0;
-        return sortAsc ? idA - idB : idB - idA;
-    });
-
-    // 2. 分页
-    const total   = fullList.length;
-    const maxPage = Math.ceil(total / pageSize);
-    const start   = (currentPage - 1) * pageSize;
-    const end     = start + pageSize;
-    const pageData= fullList.slice(start, end);
-
-    // 3. 写表格
-    const tbody = document.querySelector('#resultTable tbody');
-    tbody.innerHTML = '';
-    pageData.forEach(proj => {
-        const tr = document.createElement('tr');
-
-        const skillTexts = (proj.reqSkill || [])
-            .map(item => {
-                const skill = skillOptions.find(s => s._id == item.skillId);
-                return `${skill ? skill.skillName : `技能${item.skillId || '未知'}`}`;
-            }).join('<br>');
-
-        const memberTexts = (proj.members || [])
-            .map(item => empMap[item.empId] || `员工${item.empId}`)
-            .join('<br>');
-
-        tr.innerHTML = `
-            <td>${proj._id || proj.id || 'N/A'}</td>
-            <td>${proj.projName || '未命名项目'}</td>
-            <td>${getStatusText(proj.projStatus)}</td>
-            <td>${formatStartDate(proj.startDate)}</td>
-            <td>${skillTexts}</td>
-            <td>${memberTexts}</td>`;
-        tbody.appendChild(tr);
-    });
-
-    // 4. 更新分页按钮状态
-    document.getElementById('pageInfo').textContent = `第 ${currentPage} 页 / 共 ${maxPage} 页`;
-    document.getElementById('btnPrev').disabled = currentPage === 1;
-    document.getElementById('btnNext').disabled = currentPage === maxPage;
-
-    document.getElementById('pageInput').value = currentPage;
 }
 
 /* ----------  翻页  ---------- */
@@ -1034,6 +993,20 @@ function renderPage() {
         const projectId = proj._id || proj.id;
         const isSelected = selectedProjects.has(projectId.toString());
 
+        // 获取任务信息
+        const taskCount = proj.taskCount || 0;
+        const completedTasks = proj.completedTasks || 0;
+        const pendingTasks = proj.pendingTasks || 0;
+        const completionRate = taskCount > 0 ? Math.round((completedTasks / taskCount) * 100) : 0;
+
+        const taskStatusText = taskCount > 0
+            ? `总计: ${taskCount} | 已完成: ${completedTasks} | 未完成: ${pendingTasks} | 完成率: ${completionRate}%`
+            : '暂无任务';
+
+        const taskStatusClass = taskCount === 0 ? 'text-muted' :
+            completionRate === 100 ? 'text-success' :
+                completionRate >= 50 ? 'text-warning' : 'text-danger';
+
         tr.innerHTML = `
             <td class="checkbox-col" style="display: table-cell;">
                 <input type="checkbox" class="project-checkbox" value="${projectId}" 
@@ -1046,6 +1019,17 @@ function renderPage() {
             <td>${formatStartDate(proj.startDate)}</td>
             <td>${skillTexts}</td>
             <td>${memberTexts}</td>
+            <td>
+                <div class="task-status-info ${taskStatusClass}">
+                    ${taskStatusText}
+                </div>
+            </td>
+            <td>
+                <button class="btn-info" onclick="showProjectTasks('${projectId}', '${proj.projName || '未命名项目'}')" 
+                        style="padding: 4px 8px; font-size: 12px; background-color: #17a2b8; color: white; border: none; border-radius: 3px; cursor: pointer;">
+                    查看任务
+                </button>
+            </td>
             <td class="action-col" style="display: table-cell; text-align: center;">
                 <button class="btn-warning" onclick="showEditProjectModal('${projectId}')" style="margin-right: 5px; padding: 4px 8px; font-size: 12px;">编辑</button>
                 <button class="btn-danger" onclick="deleteProject('${projectId}')" style="padding: 4px 8px; font-size: 12px;">删除</button>
@@ -1096,4 +1080,366 @@ function loadMetaData() {
                 skillName: skill.skillName || '未知技能'
             }));
         });
+}
+
+/* ==========  任务管理功能  ========== */
+
+// 全局变量
+let currentProjectTasks = [];
+let currentTaskFilter = 'all';
+let currentProjectId = null;
+
+/**
+ * 显示项目任务
+ */
+async function showProjectTasks(projectId, projectName) {
+    currentProjectId = projectId;
+    currentTaskFilter = 'all';
+
+    // 设置模态框标题
+    document.getElementById('tasksModalTitle').textContent = `${projectName} - 项目任务`;
+
+    try {
+        // 获取项目任务
+        const response = await fetch(`/projectmatch/tasks/${projectId}`);
+        if (response.ok) {
+            currentProjectTasks = await response.json();
+            renderTasksList();
+            updateTasksSummary();
+            document.getElementById('tasksModal').style.display = 'block';
+        } else {
+            showTasksAlert('获取任务列表失败', 'danger');
+        }
+    } catch (error) {
+        showTasksAlert('网络错误: ' + error.message, 'danger');
+    }
+}
+
+/**
+ * 关闭任务模态框
+ */
+function closeTasksModal() {
+    document.getElementById('tasksModal').style.display = 'none';
+    currentProjectTasks = [];
+    currentTaskFilter = 'all';
+    currentProjectId = null;
+}
+
+/**
+ * 渲染任务列表
+ */
+function renderTasksList() {
+    const tasksList = document.getElementById('tasksList');
+    tasksList.innerHTML = '';
+
+    let filteredTasks = currentProjectTasks;
+
+    // 根据筛选条件过滤任务
+    if (currentTaskFilter === 'pending') {
+        filteredTasks = currentProjectTasks.filter(task => task.taskStatus === 0);
+    } else if (currentTaskFilter === 'completed') {
+        filteredTasks = currentProjectTasks.filter(task => task.taskStatus === 1);
+    }
+
+    if (filteredTasks.length === 0) {
+        tasksList.innerHTML = `
+            <div class="no-tasks">
+                <p>暂无任务数据</p>
+            </div>
+        `;
+        return;
+    }
+
+    filteredTasks.forEach(task => {
+        const taskItem = document.createElement('div');
+        taskItem.className = 'task-item';
+
+        const statusClass = task.taskStatus === 1 ? 'status-completed' : 'status-pending';
+        const statusText = task.taskStatus === 1 ? '已完成' : '未完成';
+        const managerName = empMap[task.managerId] || `员工${task.managerId || '未知'}`;
+
+        taskItem.innerHTML = `
+            <div class="task-info">
+                <div class="task-name">${task.taskName || '未命名任务'}</div>
+                <div class="task-details">
+                    负责人: ${managerName} | 任务ID: ${task._id || 'N/A'}
+                </div>
+            </div>
+            <div class="task-status">
+                <span class="status-badge ${statusClass}">${statusText}</span>
+                <div class="task-actions">
+                    <button class="btn-edit" onclick="editTask('${task._id}')">编辑</button>
+                    <button class="btn-delete" onclick="deleteTask('${task._id}')">删除</button>
+                </div>
+            </div>
+        `;
+
+        tasksList.appendChild(taskItem);
+    });
+}
+
+/**
+ * 更新任务统计信息
+ */
+function updateTasksSummary() {
+    const summary = document.getElementById('tasksSummary');
+    const totalTasks = currentProjectTasks.length;
+    const completedTasks = currentProjectTasks.filter(task => task.taskStatus === 1).length;
+    const pendingTasks = totalTasks - completedTasks;
+
+    summary.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong>任务统计:</strong> 
+                总计 ${totalTasks} 个任务，
+                已完成 ${completedTasks} 个，
+                未完成 ${pendingTasks} 个
+            </div>
+            <div>
+                完成率: ${totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * 筛选任务
+ */
+function filterTasks(filterType) {
+    currentTaskFilter = filterType;
+
+    // 更新筛选按钮状态
+    document.querySelectorAll('.tasks-filters .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById(`filter${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`).classList.add('active');
+
+    renderTasksList();
+}
+
+/**
+ * 显示任务提示信息
+ */
+function showTasksAlert(message, type = 'info') {
+    const alertDiv = document.getElementById('tasksModalAlert');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.textContent = message;
+    alertDiv.style.display = 'block';
+
+    // 3秒后自动隐藏
+    setTimeout(() => {
+        alertDiv.style.display = 'none';
+    }, 3000);
+}
+
+/**
+ * 编辑任务
+ */
+function editTask(taskId) {
+    // TODO: 实现任务编辑功能
+    showTasksAlert('任务编辑功能待实现', 'info');
+}
+
+/**
+ * 删除任务
+ */
+async function deleteTask(taskId) {
+    if (!confirm('确定要删除这个任务吗？')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/projectmatch/tasks/delete/${taskId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            showTasksAlert('任务删除成功', 'success');
+            // 重新加载任务列表
+            if (currentProjectId) {
+                const reloadResponse = await fetch(`/projectmatch/tasks/${currentProjectId}`);
+                if (reloadResponse.ok) {
+                    currentProjectTasks = await reloadResponse.json();
+                    renderTasksList();
+                    updateTasksSummary();
+                }
+            }
+        } else {
+            showTasksAlert('删除失败', 'danger');
+        }
+    } catch (error) {
+        showTasksAlert('网络错误: ' + error.message, 'danger');
+    }
+}
+
+/**
+ * 新增任务
+ */
+function addNewTask() {
+    if (!currentProjectId) {
+        showTasksAlert('无法获取项目信息', 'danger');
+        return;
+    }
+
+    // 设置模态框标题
+    document.getElementById('createTaskModalTitle').textContent = '新增任务';
+
+    // 清空表单
+    document.getElementById('createTaskForm').reset();
+    document.getElementById('taskStatus').value = '0'; // 默认未完成
+    document.getElementById('createTaskModalAlert').style.display = 'none';
+
+    // 显示模态框
+    document.getElementById('createTaskModal').style.display = 'block';
+}
+
+/**
+ * 关闭任务创建模态框
+ */
+function closeCreateTaskModal() {
+    document.getElementById('createTaskModal').style.display = 'none';
+}
+
+/**
+ * 保存新任务
+ */
+async function saveNewTask() {
+    // 验证表单
+    const taskName = document.getElementById('taskName').value.trim();
+    if (!taskName) {
+        showCreateTaskAlert('请输入任务名称', 'danger');
+        return;
+    }
+
+    // 获取任务数据
+    const taskData = {
+        projId: parseInt(currentProjectId),
+        taskName: taskName,
+        managerId: document.getElementById('taskManagerId').value ?
+            parseInt(document.getElementById('taskManagerId').value) : null,
+        taskStatus: parseInt(document.getElementById('taskStatus').value)
+    };
+
+    try {
+        const response = await fetch('/projectmatch/tasks/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(taskData)
+        });
+
+        if (response.ok) {
+            showCreateTaskAlert('任务创建成功', 'success');
+
+            // 延迟关闭模态框并刷新任务列表
+            setTimeout(() => {
+                closeCreateTaskModal();
+                // 重新加载项目任务
+                if (currentProjectId) {
+                    loadProjectTasks(currentProjectId);
+                }
+            }, 1500);
+
+        } else {
+            const error = await response.text();
+            showCreateTaskAlert('创建失败: ' + error, 'danger');
+        }
+    } catch (error) {
+        showCreateTaskAlert('网络错误: ' + error.message, 'danger');
+    }
+}
+
+/**
+ * 加载项目任务（内部使用）
+ */
+async function loadProjectTasks(projectId) {
+    try {
+        const response = await fetch(`/projectmatch/tasks/${projectId}`);
+        if (response.ok) {
+            currentProjectTasks = await response.json();
+            renderTasksList();
+            updateTasksSummary();
+        }
+    } catch (error) {
+        console.error('加载任务失败:', error);
+    }
+}
+
+/**
+ * 显示任务创建提示信息
+ */
+function showCreateTaskAlert(message, type = 'info') {
+    const alertDiv = document.getElementById('createTaskModalAlert');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.textContent = message;
+    alertDiv.style.display = 'block';
+
+    // 3秒后自动隐藏
+    setTimeout(() => {
+        alertDiv.style.display = 'none';
+    }, 3000);
+}
+
+/* ==========  项目任务关联功能  ========== */
+
+/**
+ * 获取项目列表及其任务信息
+ * @param {Array} projects - 项目列表
+ * @returns {Promise<Array>} - 包含项目及其任务信息的数组
+ */
+async function getProjectsWithTasks(projects) {
+    try {
+        const response = await fetch('/projectmatch/projectsWithTasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(projects)
+        });
+
+        if (response.ok) {
+            return await response.json();
+        } else {
+            console.error('获取项目任务信息失败');
+            return projects.map(project => ({
+                project: project,
+                tasks: [],
+                taskCount: 0,
+                completedTasks: 0,
+                pendingTasks: 0
+            }));
+        }
+    } catch (error) {
+        console.error('网络错误:', error);
+        return projects.map(project => ({
+            project: project,
+            tasks: [],
+            taskCount: 0,
+            completedTasks: 0,
+            pendingTasks: 0
+        }));
+    }
+}
+
+/**
+ * 渲染包含任务信息的项目表格
+ * @param {Array} projectsWithTasks - 包含项目及其任务信息的数组
+ */
+function renderTableWithTasks(projectsWithTasks) {
+    // 转换为传统格式供现有渲染函数使用
+    const simplifiedProjects = projectsWithTasks.map(item => {
+        const project = item.project;
+        return {
+            ...project,
+            // 添加任务信息到项目对象
+            taskCount: item.taskCount,
+            completedTasks: item.completedTasks,
+            pendingTasks: item.pendingTasks,
+            tasks: item.tasks
+        };
+    });
+
+    // 使用现有的渲染函数
+    renderTable(simplifiedProjects);
 }
