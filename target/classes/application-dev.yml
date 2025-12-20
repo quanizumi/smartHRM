@@ -1,0 +1,8 @@
+# Project-name: smart Human Resource Management
+server:
+  port: 8080
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/smartHRM

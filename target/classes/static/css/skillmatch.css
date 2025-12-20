@@ -1,0 +1,36 @@
+body{font-family:Arial,Helvetica,sans-serif;margin:20px;}
+.filter-row{display:flex;gap:10px;align-items:center;margin-bottom:8px;}
+.btn-small{padding:2px 6px;font-size:12px;}
+table{width:100%;border-collapse:collapse;margin-top:15px;}
+th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;}
+th{background:#f2f2f2;}
+/* 技能/项目单元格换行美观 */
+#resultTable td div {
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* ========== 分页栏 ========== */
+.page-bar {
+    text-align: center;
+    white-space: nowrap;
+    padding: 6px 0;
+}
+
+.page-bar button {
+    margin: 0 4px;
+    padding: 4px 10px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.page-jump input {
+    width: 50px;
+    text-align: center;
+    margin: 0 4px;
+}
+
+.page-info {
+    margin-left: 20px;
+    font-weight: bold;
+}

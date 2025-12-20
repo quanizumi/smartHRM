@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>员工技能匹配</title>
+    <link rel="stylesheet" href="/css/skillmatch.css">
+</head>
+<body>
+
+<h2>技能匹配筛选</h2>
+
+<form id="filterForm">
+    <div id="filterContainer">
+        <!-- 动态生成筛选行 -->
+    </div>
+    <button type="button" onclick="addFilterRow()">+ 增加条件</button>
+    <button type="button" onclick="doSearch()">搜索</button>
+</form>
+
+<h3>匹配结果</h3>
+<table id="resultTable">
+    <thead>
+    <tr>
+        <!-- 新增点击排序 -->
+        <th style="cursor:pointer" onclick="toggleSort()">
+            id <span id="sortIcon">⇅</span>
+        </th>
+        <th>姓名</th>
+        <th>部门</th>
+        <th>技能列表</th>
+        <th>参与项目</th>
+    </tr>
+    </thead>
+    <tbody><!-- 动态填充 --></tbody>
+    <!-- 分页控制 -->
+    <tfoot>
+    <tr>
+        <td colspan="5" class="page-bar">
+            <button id="btnFirst" onclick="gotoFirst()">首页</button>
+            <button id="btnPrev"  onclick="changePage(-1)">上一页</button>
+
+            <span class="page-jump">
+        第
+        <input type="number" id="pageInput" min="1" onkeypress="if(event.key==='Enter') jumpToPage()">
+        页
+        <button onclick="jumpToPage()">跳转</button>
+      </span>
+
+            <button id="btnNext" onclick="changePage(1)">下一页</button>
+            <button id="btnLast" onclick="gotoLast()">尾页</button>
+
+            <span id="pageInfo" class="page-info"></span>
+        </td>
+    </tr>
+    </tfoot>
+</table>
+
+<script src="/js/skillmatch.js"></script>
+</body>
+</html>
+    <!-- 如果想把结果渲染在页面，把 @ResponseBody 去掉，用 Model 传值，这里加遍历 -->

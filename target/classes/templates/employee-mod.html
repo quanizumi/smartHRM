@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-CN"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle}">员工信息</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; padding: 20px 0; }
+        .card { box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: none; border-radius: 8px; }
+        .card-header { background-color: #fff; border-bottom: 1px solid #eee; border-radius: 8px 8px 0 0 !important; }
+        .form-label { font-weight: 500; color: #333; }
+        .error-alert { margin-bottom: 20px; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+        .checkbox-item { flex: 0 0 calc(33.333% - 10px); display: flex; align-items: center; gap: 6px; }
+        .skill-item { margin-bottom: 10px; }
+        @media (max-width: 768px) {
+            .checkbox-item { flex: 0 0 calc(50% - 10px); }
+        }
+        @media (max-width: 576px) {
+            .checkbox-item { flex: 0 0 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 导航栏（不变） -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">员工管理系统</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" th:href="@{/employees/}">员工列表</a></li>
+                    <li class="nav-item" th:if="${pageTitle == '编辑员工信息'}">
+                    </li>
+                    <li class="nav-item" th:if="${pageTitle == '新增员工信息'}">
+                    </li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/departments/}">部门管理</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 表单卡片（不变） -->
+    <div class="card">
+        <div class="card-header"><h4 class="mb-0" th:text="${pageTitle}">员工信息</h4></div>
+        <div class="card-body p-4">
+            <!-- 错误提示（不变） -->
+            <div th:if="${error}" class="alert alert-danger error-alert" role="alert">[[${error}]]</div>
+            <div th:if="${errors}" class="alert alert-danger error-alert" role="alert">
+                <p class="mb-2">表单验证失败：</p>
+                <ul class="mb-0"><li th:each="err : ${errors}">[[${err.field}]]：[[${err.defaultMessage}]]</li></ul>
+            </div>
+
+            <!-- 表单提交路径（不变） -->
+            <form th:action="@{${formAction}}" method="post" th:object="${dto}" novalidate>
+                <input type="hidden" th:field="*{id}">
+                <!-- 新增：保存分页上下文（关键） -->
+                <input type="hidden" name="pageNum" th:value="${param.pageNum != null ? param.pageNum[0] : 1}">
+                <input type="hidden" name="empName" th:value="${param.empName != null ? param.empName[0] : ''}">
+
+                <!-- 基础信息组（不变） -->
+                <div class="row g-4 mb-5">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">员工姓名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" th:field="*{name}" placeholder="请输入员工姓名" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="department" class="form-label">所属部门 <span class="text-danger"></span></label>
+                        <select class="form-select" id="department" th:field="*{department}">
+                            <option value="">空（请选择部门）</option>
+                            <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.depName}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="joinDate" class="form-label">加入时间 <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="joinDate"
+                               th:field="*{joinDate}"
+                               th:value="${dto.joinDate}"
+                               th:attr="value=${dto.joinDate != null ? #temporals.format(dto.joinDate, 'yyyy-MM-dd') : ''}"
+                               required>
+                    </div>
+                </div>
+
+                <!-- 技能列表（仅修改 th:selected 表达式和 skill 空值防护） -->
+                <div class="row g-4 mb-5">
+                    <div class="col-12">
+                        <label class="form-label">技能列表</label>
+                        <div id="skillContainer" class="row g-3">
+                            <th:block th:if="${employee != null and employee.skillList != null}">
+                                <!-- 加 skill != null 防护，避免循环到 null 技能项 -->
+                                <div th:each="skill, index : ${employee.skillList}"
+                                     th:if="${skill != null}"
+                                     class="skill-item col-md-12">
+                                    <div class="input-group">
+                                        <select class="form-select skill-select">
+                                            <option th:each="s : ${allSkills}"
+                                                    th:value="${s._id}"
+                                                    th:text="${s.skillName + '（' + s.skillKind + '）'}"
+                                                    th:selected="${'' + s._id == '' + skill.skillId}">
+                                            </option>
+                                        </select>
+                                        <input type="number" class="form-control proficiency-input"
+                                               min="1" max="5" step="1"
+                                               th:value="${skill.proficiency ?: ''}"
+                                               placeholder="熟练度1-5">
+                                        <button type="button" class="btn btn-outline-danger remove-skill">移除</button>
+                                    </div>
+                                </div>
+                            </th:block>
+                            <div class="col-md-12">
+                                <button type="button" id="addSkillBtn" class="btn btn-outline-secondary">+ 新增技能</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="skills" th:field="*{skills}" th:value="${dto.skills ?: ''}">
+                        <div class="form-text mt-2">熟练度说明：1=入门，2=初级，3=中级，4=高级，5=精通（无需技能可留空）</div>
+                    </div>
+                </div>
+
+                <!-- 关联信息组（不变） -->
+                <div class="row g-4">
+                    <div class="col-12">
+                        <label class="form-label">参与项目</label>
+                        <div class="checkbox-group">
+                            <div th:each="proj : ${allProjects}" class="checkbox-item">
+                                <input type="checkbox" class="form-check-input"
+                                       th:field="*{newProjectIds}" th:value="${proj.id}"
+                                       th:checked="${dto.newProjectIds != null and dto.newProjectIds.contains(proj.id)}">
+                                <label class="form-check-label" th:text="${proj.projName}">项目1</label>
+                            </div>
+                            <div th:if="${allProjects.isEmpty()}" class="text-muted">暂无可用项目</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">参与培训</label>
+                        <div class="checkbox-group">
+                            <div th:each="train : ${allTrainings}" class="checkbox-item">
+                                <input type="checkbox" class="form-check-input"
+                                       th:field="*{newTrainingIds}" th:value="${train._id}"
+                                       th:checked="${dto.newTrainingIds != null and dto.newTrainingIds.contains(train._id)}">
+                                <label class="form-check-label" th:text="${train.trainName}">培训1</label>
+                            </div>
+                            <div th:if="${allTrainings.isEmpty()}" class="text-muted">暂无可用培训</div>
+                        </div>
+                    </div>
+
+                    <!-- 提交按钮（不变） -->
+                    <div class="mt-5 d-flex gap-3">
+                        <button type="submit" class="btn btn-primary px-5"
+                                th:text="${pageTitle == '新增员工信息' ? '提交新增' : '提交更新'}">
+                        </button>
+                        <a th:href="@{/employees/(pageNum=${param.pageNum != null ? param.pageNum[0] : 1}, empName=${param.empName != null ? param.empName[0] : ''})}" class="btn btn-secondary px-5">返回列表</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 技能模板（不变） -->
+<template id="skillTemplate">
+    <div class="skill-item col-md-12">
+        <div class="input-group">
+            <select class="form-select skill-select">
+                <option value="">请选择技能</option>
+                <option th:each="s : ${allSkills}" th:value="${s._id}" th:text="${s.skillName + '（' + s.skillKind + '）'}"></option>
+            </select>
+            <input type="number" class="form-control proficiency-input"
+                   min="1" max="5" step="1" placeholder="熟练度1-5">
+            <button type="button" class="btn btn-outline-danger remove-skill">移除</button>
+        </div>
+    </div>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="javascript">
+    // 原有JS逻辑完全不变（确保新增/移除技能、表单提交功能正常）
+    document.addEventListener('DOMContentLoaded', function() {
+        const skillContainer = document.getElementById('skillContainer');
+        const addSkillBtn = document.getElementById('addSkillBtn');
+        const skillTemplate = document.getElementById('skillTemplate');
+        const skillsInput = document.getElementById('skills');
+
+        // 初始化：格式化已有技能到隐藏输入框（确保编辑时技能字符串正确）
+        updateSkillsInput();
+
+        // 新增技能（不变）
+        addSkillBtn.addEventListener('click', function() {
+            const newSkill = skillTemplate.content.cloneNode(true);
+            newSkill.querySelector('.remove-skill').addEventListener('click', function() {
+                this.closest('.skill-item').remove();
+                updateSkillsInput();
+            });
+            skillContainer.insertBefore(newSkill, addSkillBtn.parentElement);
+            updateSkillsInput();
+        });
+
+        // 移除技能（不变）
+        document.querySelectorAll('.remove-skill').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.closest('.skill-item').remove();
+                updateSkillsInput();
+            });
+        });
+
+        // 技能选择或熟练度变化时更新（不变）
+        skillContainer.addEventListener('change', updateSkillsInput);
+        skillContainer.addEventListener('input', updateSkillsInput);
+
+        // 格式化技能数据为后端需要的字符串（不变）
+        function updateSkillsInput() {
+            const skillItems = document.querySelectorAll('.skill-item');
+            const skillList = [];
+            skillItems.forEach(item => {
+                const skillId = item.querySelector('.skill-select').value;
+                const proficiency = item.querySelector('.proficiency-input').value;
+                if (skillId && proficiency) {
+                    skillList.push(`${skillId}:${proficiency}`);
+                }
+            });
+            skillsInput.value = skillList.join(',');
+        }
+
+        // 表单提交事件（不变）
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const formData = new FormData(this);
+            console.log('前端提交的表单数据：');
+            formData.forEach((value, key) => {
+                console.log(`${key}: ${value}`);
+            });
+
+            const skills = document.getElementById('skills').value;
+            console.log('技能字符串（skills）:', skills);
+
+            const projectIds = formData.getAll('newProjectIds');
+            const trainingIds = formData.getAll('newTrainingIds');
+            console.log('选中的项目ID:', projectIds);
+            console.log('选中的培训ID:', trainingIds);
+
+            const joinDate = document.getElementById('joinDate').value;
+            console.log('提交给后端的 LocalDate 格式：', joinDate);
+        });
+
+        console.log('后端传递的所有培训：', /*[[${allTrainings}]]*/ []);
+        const joinDateInput = document.getElementById('joinDate');
+        console.log('后端传递的 LocalDate 原始格式：', joinDateInput.value);
+    });
+</script>
+</body>
+</html>

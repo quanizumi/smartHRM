@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工管理 - 员工管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        /* 部门状态样式（明确区分三种状态，避免重叠） */
+        .dept-normal {
+            color: #0369a1;
+            background-color: #f0f9ff;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .dept-deleted {
+            color: #dc2626;
+            background-color: #fee2e2;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+            font-style: italic;
+        }
+        .dept-unassigned {
+            color: #64748b;
+            background-color: #f1f5f9;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        /* 其他原有样式保持不变 */
+        body {
+            background-color: #f9fafb;
+            font-family: "Inter", system-ui, sans-serif;
+            padding: 1.5rem 0;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+        .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid #f0f2f5;
+            padding: 1.25rem 1.5rem;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+        .page-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .page-title i {
+            color: #3b82f6;
+            font-size: 1.8rem;
+        }
+        .table {
+            margin-bottom: 0;
+            background-color: #fff;
+        }
+        .table th {
+            color: #64748b;
+            font-weight: 500;
+            border-bottom-width: 1px;
+            border-color: #f0f2f5;
+            vertical-align: middle;
+            padding: 0.75rem 1rem;
+        }
+        .table td {
+            color: #1e293b;
+            vertical-align: middle;
+            border-color: #f8fafc;
+            padding: 0.75rem 1rem;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #fefeff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+        }
+        .badge-skill {
+            background-color: #e0f2fe;
+            color: #0284c7;
+            margin-right: 0.375rem;
+            margin-bottom: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        .badge-project {
+            background-color: #dbeafe;
+            color: #2563eb;
+            margin-right: 0.375rem;
+            margin-bottom: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        .btn {
+            border-radius: 8px;
+            padding: 0.375rem 0.75rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        .btn-primary {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+        .btn-outline-primary {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        .btn-outline-primary:hover {
+            background-color: #3b82f6;
+            color: #fff;
+        }
+        .btn-outline-danger {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+        .btn-outline-danger:hover {
+            background-color: #ef4444;
+            color: #fff;
+        }
+        .alert {
+            border-radius: 8px;
+            border: none;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #94a3b8;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+        .empty-state p {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        @media (max-width: 768px) {
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 1rem;
+            }
+            .table-responsive {
+                margin: -0.75rem;
+                padding: 0.75rem;
+            }
+            .btn {
+                padding: 0.375rem 0.5rem;
+                font-size: 0.8rem;
+            }
+            .action-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4 rounded-12">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <i class="bi bi-people-fill text-primary fs-5"></i>
+                <span class="fw-bold text-dark">员工管理系统</span>
+            </a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active text-primary fw-medium" th:href="@{/employees/}">
+                            <i class="bi bi-person-badge me-1"></i> 员工列表
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-gray-600 hover:text-primary" th:href="@{/departments/}">
+                            <i class="bi bi-building-fill me-1"></i> 部门管理
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="card mb-6">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+            <div class="page-title">
+                <i class="bi bi-person-badge"></i>
+                <span>员工管理</span>
+            </div>
+
+            <!-- 新增：搜索表单（与新增按钮并列） -->
+            <div class="d-flex gap-2 align-items-center">
+                <form th:action="@{/employees/}" method="get" class="d-flex gap-2">
+                    <div class="input-group">
+                        <!-- 搜索输入框：回显查询参数 empName -->
+                        <input type="text" name="empName"
+                               th:value="${empName}"
+                               class="form-control"
+                               placeholder="输入员工姓名查询..."
+                               style="width: 200px;">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="bi bi-search me-1"></i> 查询
+                        </button>
+                        <!-- 清空按钮：若有查询参数则显示，点击重置表单 -->
+                        <button type="button"
+                                th:if="${empName != null and empName != ''}"
+                                class="btn btn-outline-secondary"
+                                th:onclick="'window.location.href=\'' + @{/employees/} + '\''"> <!-- 正确写法 -->
+                            <i class="bi bi-x me-1"></i> 清空
+                        </button>
+                    </div>
+                </form>
+
+                <a th:href="@{/employees/add}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> 新增员工
+                </a>
+            </div>
+
+            <div class="card-body">
+                <div th:if="${message}" class="alert alert-success" role="alert">
+                    <i class="bi bi-check-circle-fill fs-5"></i>
+                    <span>[[${message}]]</span>
+                </div>
+                <div th:if="${error}" class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-circle-fill fs-5"></i>
+                    <span>[[${error}]]</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                        <tr>
+                            <th>员工ID</th>
+                            <th>员工姓名</th>
+                            <th>所属部门</th>
+                            <th>技能列表</th>
+                            <th>参与项目</th>
+                            <th>加入时间</th>
+                            <th style="width: 140px;">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="emp : ${employees}">
+                            <td th:text="${emp.id}" class="fw-medium"></td>
+                            <td th:text="${emp.empName}" class="fw-semibold text-gray-800"></td>
+                            <td>
+                                <!-- 直接显示后端预处理的部门名称，样式通过 deptType 绑定 -->
+                                <span th:class="|dept-${emp.deptType}|">[[${emp.deptName}]]</span>
+                            </td>
+                            <td>
+                                <div th:if="${emp.skillList != null and !emp.skillList.isEmpty()}" class="d-flex flex-wrap">
+                                    <span th:each="skill : ${emp.skillList}" class="badge-skill">
+                                        技能[[${skill.skillId}]]（[[${skill.proficiency}]]）
+                                    </span>
+                                </div>
+                                <span th:if="${emp.skillList == null or emp.skillList.isEmpty()}" class="text-gray-500">无</span>
+                            </td>
+                            <td>
+                                <div th:if="${emp.projects != null and !emp.projects.isEmpty()}" class="d-flex flex-wrap">
+                                    <span th:each="proj : ${emp.projects}" class="badge-project">
+                                        项目[[${proj.projId}]]
+                                    </span>
+                                </div>
+                                <span th:if="${emp.projects == null or emp.projects.isEmpty()}" class="text-gray-500">无</span>
+                            </td>
+                            <td th:text="${emp.joinDate != null ? #temporals.format(emp.joinDate, 'yyyy-MM-dd') : '未设置'}" class="text-gray-600"></td>
+                            <td>
+                                <div class="action-buttons d-flex gap-2">
+                                    <form th:action="@{/employees/del}" method="post" style="margin: 0;">
+                                        <input type="hidden" name="id" th:value="${emp.id}">
+                                        <button type="submit" class="btn btn-outline-danger flex-1"
+                                                onclick="return confirm('确定删除吗？')">
+                                            <i class="bi bi-trash me-1"></i> 删除
+                                        </button>
+                                    </form>
+                                    <a th:href="@{/employees/mod(id=${emp.id}, pageNum=${pageNum}, empName=${empName})}" class="btn btn-outline-primary flex-1">
+                                        <i class="bi bi-pencil me-1"></i> 编辑
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${employees.isEmpty()}">
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <i class="bi bi-person"></i>
+                                    <p>暂无员工数据</p>
+                                    <small>点击"新增员工"按钮创建第一个员工</small>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <!-- 新增：员工分页控件（放在表格下方） -->
+                    <th:block th:if="${totalElements > 0}"> <!-- 有数据时才显示 -->
+                        <div class="d-flex justify-content-between align-items-center p-3 border-top mt-3">
+                            <!-- 左侧：显示总条数和总页数 -->
+                            <div class="text-muted">
+                                共 <span th:text="${totalElements}"></span> 名员工，共 <span th:text="${totalPages}"></span> 页
+                            </div>
+
+                            <!-- 右侧：分页按钮和跳转 -->
+                            <div class="d-flex align-items-center gap-2">
+                                <!-- 上一页按钮（传递 empName 保持搜索状态） -->
+                                <a th:href="@{/employees/(empName=${empName}, pageNum=${pageNum > 1 ? pageNum - 1 : 1})}"
+                                   class="btn btn-sm btn-outline-secondary"
+                                   th:classappend="${pageNum == 1 ? 'disabled' : ''}">
+                                    上一页
+                                </a>
+
+                                <!-- 页码显示 -->
+                                <span class="px-2">
+                                第 <span th:text="${pageNum}"></span> 页 / 共 <span th:text="${totalPages}"></span> 页
+                            </span>
+
+                                <!-- 下一页按钮 -->
+                                <a th:href="@{/employees/(empName=${empName}, pageNum=${pageNum < totalPages ? pageNum + 1 : totalPages})}"
+                                   class="btn btn-sm btn-outline-secondary"
+                                   th:classappend="${pageNum == totalPages ? 'disabled' : ''}">
+                                    下一页
+                                </a>
+
+                                <!-- 页码跳转输入框 -->
+                                <form th:action="@{/employees/}" method="get" class="d-flex gap-1">
+                                    <!-- 隐藏域：传递搜索关键词 empName（员工页面用 empName 而非 searchKey） -->
+                                    <input type="hidden" name="empName" th:value="${empName}">
+                                    <!-- 输入页码 -->
+                                    <input type="number" name="pageNum"
+                                           class="form-control form-control-sm"
+                                           style="width: 60px;"
+                                           min="1"
+                                           th:max="${totalPages}"
+                                           th:value="${pageNum}">
+                                    <button type="submit" class="btn btn-sm btn-primary">跳转</button>
+                                </form>
+                            </div>
+                        </div>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
